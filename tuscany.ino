@@ -1,4 +1,4 @@
-#define PIN_LED 8
+#define PIN_LED 13
 
 // MOTORs
 
@@ -66,6 +66,7 @@ uint8_t motorSpeedInc[4] = {1, 1, 1, 1};
 uint8_t motorSpeedDelay[4] = {250, 250, 250, 250};
 
 uint8_t motorDir[4] = {DIR_LOOSE, DIR_BACK, DIR_UP, DIR_CW};
+int motorCurrentSensorValue;
 
 #define GYRO_MAX_UP 52
 #define GYRO_MAX_DW 10
@@ -113,6 +114,8 @@ float curMPUGyroZ = 0;
 float absTreshold; 
 float startTrMPUGyroZ;
 float endTrMPUGyroZ;
+float mpuGyroX = 0; 
+float mpuGyroY = 0; 
 float mpuGyroZ = 0; 
 
 boolean startPosition = false;
@@ -120,7 +123,7 @@ boolean endPosition = false;
 
 volatile bool mpuInterrupt = false; 
 
-boolean getMPUGyroZ ()
+boolean getMPUGyroXYZ ()
 {    
       boolean flagReturn = false;
       mpuInterrupt = false;
@@ -151,17 +154,18 @@ boolean getMPUGyroZ ()
         mpu.dmpGetQuaternion(&q, fifoBuffer);
         mpu.dmpGetGravity(&gravity, &q);
         mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+        mpuGyroX = ypr[0] * 180/M_PI;
+        mpuGyroY = ypr[1] * 180/M_PI;
         mpuGyroZ = ypr[2] * 180/M_PI;
-
-        mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-                    Serial.print("areal\t");
-            Serial.print(aaReal.x);
+        /*
+            Serial.print("gyro\t");
+            Serial.print(mpuGyroX);
             Serial.print("\t");
-            Serial.print(aaReal.y);
+            Serial.print(mpuGyroY);
             Serial.print("\t");
-            Serial.println(aaReal.z);
-
-        flagReturn = true;
+            Serial.println(mpuGyroZ);        
+         */   
+           flagReturn = true;
       }
      return flagReturn;
 }
@@ -187,32 +191,34 @@ void intButton()
 void setup() 
 {
   Serial.begin(115200);
+
+  pinMode(PIN_TRIG, OUTPUT);
+  pinMode(PIN_ECHO, INPUT);
   pinMode(PIN_LED, OUTPUT);
   pinMode(PIN_SER, OUTPUT);
   pinMode(PIN_LATCH, OUTPUT);
   pinMode(PIN_CLK, OUTPUT);
  
   attachInterrupt(1, intButton, RISING);
-  digitalWrite(PIN_LED, HIGH);
-
+  
    Wire.begin();
     TWBR = 24;
 
     Serial.begin(115200);
 
     // initialize device
-    Serial.println(F("Initializing I2C devices..."));
+   // Serial.println(F("Initializing I2C devices..."));
     mpu.initialize();
 
     // verify connection
-    Serial.println(F("Testing device connections..."));
-    Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+   // Serial.println(F("Testing device connections..."));
+   // Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
 
     // wait for ready
 
-    delay(500);    
+   // delay(500);    
     // load and configure the DMP
-    Serial.println(F("Initializing DMP..."));
+    //Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
 
     // supply your own gyro offsets here, scaled for min sensitivity
@@ -224,16 +230,17 @@ void setup()
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
         // turn on the DMP, now that it's ready
-        Serial.println(F("Enabling DMP..."));
+      //  Serial.println(F("Enabling DMP..."));
         mpu.setDMPEnabled(true);
 
         // enable Arduino interrupt detection
-        Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
+      //  Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
         
         attachInterrupt(0, dmpDataReady, RISING);
         mpuIntStatus = mpu.getIntStatus();
         // set our DMP Ready flag so the main loop() function knows it's okay to use it
-        Serial.println(F("DMP ready! Waiting for first interrupt..."));
+      //  Serial.println(F("DMP ready! Waiting for first interrupt..."));
+      digitalWrite(PIN_LED, HIGH);
         dmpReady = true;
 
         // get expected DMP packet size for later comparison
@@ -250,14 +257,17 @@ void setup()
 
  
  // initMotorH();
-  initMotorR();
+  //initMotorR();
  // testMotorAll();
+
+ trackSurface(1000);
 }
 
 
 void loop()
 {
-
+//trackSurface(10);
+//delay(250);
 }
 
 
@@ -381,11 +391,12 @@ void testMotorAll ()
 
 void initMotorR()
 {
+  boolean startPosition = false;
   Serial.println(F("INIT MOTOR_R"));
   
   motorRunTimeUSonic(MOTOR_R, DIR_CW, 1500); 
- delay(500);   
- motorRunTimeUSonic(MOTOR_R, DIR_CCW, 1500); 
+  delay(500);   
+   motorRunTimeUSonic(MOTOR_R, DIR_CCW, 1500);
 
   Serial.print("DONE INIT MOTOR_R");
   delay(1000);   
@@ -485,7 +496,6 @@ uint8_t motorRunTimeUSonic(uint8_t motor, uint8_t motorDir, int runTime)
 {
   int i;
   int motorSpeed = motorSpeedStart[2*motor];
-  int motorCurrentSensorValue;
   boolean flagStart = true;
   
   for(i=0; i<runTime; i+=STEP_MS)
@@ -509,4 +519,82 @@ uint8_t motorRunTimeUSonic(uint8_t motor, uint8_t motorDir, int runTime)
   return STOP_REASON_TIME;
 }
 
+void trackSurface(int t)
+{
+
+  // Track surface look most higher point on it
+
+  boolean flagStart = true;
+  boolean flagStartPosition = true;
+  long lowUSonicDistanceCm;
+  long curUSonicDistanceCm;
+  float startMPUGyroX;
+  float curMPUGyroX;
+  int i;
+  uint8_t motorSpeed;
+  uint8_t motor = MOTOR_R;
+  
+  // Save init gyro position
+  
+  if (mpuInterrupt && flagStartPosition)
+    {
+      while(!getMPUGyroXYZ());
+      startMPUGyroX = mpuGyroX;
+      if (startMPUGyroX != 0)
+        {
+          flagStartPosition = false;
+          Serial.print(F("  StartMpuGyroX = "));
+          Serial.println(startMPUGyroX);
+        }
+    }
+
+  // Save cur_usonicDistanceCm
+   lowUSonicDistanceCm = usonicDistanceCm();
+   Serial.print(F("  LowUSonic = "));
+   Serial.println(lowUSonicDistanceCm);
+   
+
+  // RUN MOTOR_R CW for t ms time
+  motorSpeed = motorSpeedStart[2*motor];
+  
+  for(i=0; i<t; i+=STEP_MS)
+  {
+     if (mpuInterrupt)
+      {
+        while(!getMPUGyroXYZ());
+        curMPUGyroX = mpuGyroX;
+        if (startMPUGyroX != 0)
+          {
+            Serial.print(F("  curMpuGyroX = "));
+            Serial.print(curMPUGyroX);
+          }
+      }  
+
+   curUSonicDistanceCm = usonicDistanceCm();
+   Serial.print(F("  curUSonic = "));
+   Serial.println(curUSonicDistanceCm);
+   
+    motorCurrentSensorValue = motorRun(motor, DIR_CW, motorSpeed);
+    if (motorCurrentSensorValue > motorCurrentMax[2*motor])
+      {
+        motorOff(motor, STOP_REASON_BLOCK);
+        return STOP_REASON_BLOCK;
+      }  
+    if (flagStart && (motorSpeed < motorSpeedMax[2*motor]))
+      motorSpeed++;
+    else
+    {
+      motorSpeed = motorSpeedMin[2*motor];
+      flagStart = false;
+    }
+  }
+  motorOff(motor, STOP_REASON_TIME); 
+  // Read gyro_x and usonicDistanceCm
+
+  // Find lowest_usonicDistanceCm
+  // Save lowest_gyro_x for lowest_usonicDistanceCm
+
+  // RUN MOTOR_R CCW till lowest_gyro_x
+  
+}
 
