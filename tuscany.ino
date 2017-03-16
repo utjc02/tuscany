@@ -60,8 +60,8 @@ uint8_t motorCurrentMax[8] =    {48, 48,    45, 45,   70, 70,   50, 50};
 //                       MOTOR_V__DIR_UP,  MOTOR_V__DIR_DN,};
 
 uint8_t motorSpeedStart[8] = { 80,  80,    80,  80,       50,   50,    20, 20};
-uint8_t motorSpeedMax[8] =   {120, 120,    110,  110,     80,   80,    40, 40};
-uint8_t motorSpeedMin[8] =   {110,  70,    30,  30,       60,   60,    30, 30};
+uint8_t motorSpeedMax[8] =   {120, 120,    110,  110,     80,   60,    40, 40};
+uint8_t motorSpeedMin[8] =   {110,  70,    30,  30,       60,   40,    30, 30};
 uint8_t motorSpeedInc[4] = {1, 1, 1, 1};
 uint8_t motorSpeedDelay[4] = {250, 250, 250, 250};
 
@@ -144,6 +144,8 @@ boolean getMPUGyroXYZ ()
         // wait for correct available data length, should be a VERY short wait
         while (fifoCount < packetSize) 
              fifoCount = mpu.getFIFOCount();
+        Serial.print(F(" FIFO count: "));
+        Serial.println(fifoCount);
 
         // read a packet from FIFO
         mpu.getFIFOBytes(fifoBuffer, packetSize);
@@ -257,10 +259,10 @@ void setup()
 
  
  // initMotorH();
-  //initMotorR();
+  initMotorR();
  // testMotorAll();
 
- trackSurface(100);
+// trackSurface(160);
 }
 
 
@@ -394,9 +396,9 @@ void initMotorR()
   boolean startPosition = false;
   Serial.println(F("INIT MOTOR_R"));
   
-  motorRunTimeUSonic(MOTOR_R, DIR_CW, 1500); 
+ // motorRunTimeUSonic(MOTOR_R, DIR_CW, 1500); 
   delay(500);   
-   motorRunTimeUSonic(MOTOR_R, DIR_CCW, 1500);
+   motorRunTimeUSonic(MOTOR_R, DIR_CCW, 3500);
 
   Serial.print("DONE INIT MOTOR_R");
   delay(1000);   
@@ -532,6 +534,7 @@ void trackSurface(int angle)
   float startMPUGyroX;
   float endMPUGyroX;
   float curMPUGyroX;
+  float lowMPUGyroX;
   int i;
   uint8_t motorSpeed;
   uint8_t motor = MOTOR_R;
@@ -553,7 +556,7 @@ void trackSurface(int angle)
   // End gyro Position
   endMPUGyroX = startMPUGyroX + angle;
   if (endMPUGyroX > 180) 
-    endMPUGyroX -= endMPUGyroX - 360;
+    endMPUGyroX = endMPUGyroX - 360;
   Serial.print(F("  endMpuGyroX = "));
   Serial.print(endMPUGyroX);
   
@@ -567,7 +570,8 @@ void trackSurface(int angle)
   motorSpeed = motorSpeedStart[2*motor];
 
   curMPUGyroX = startMPUGyroX;
-
+  lowMPUGyroX = startMPUGyroX;
+  
   while(curMPUGyroX < endMPUGyroX)
   {
      if (mpuInterrupt)
@@ -581,9 +585,18 @@ void trackSurface(int angle)
           }
       }  
 
+  // Read gyro_x and usonicDistanceCm
+
    curUSonicDistanceCm = usonicDistanceCm();
    Serial.print(F("  curUSonic = "));
    Serial.println(curUSonicDistanceCm);
+   
+   // Find lowest_usonicDistanceCm
+   if  (curUSonicDistanceCm < lowUSonicDistanceCm)
+    {
+      lowUSonicDistanceCm = curUSonicDistanceCm;
+      lowMPUGyroX = curMPUGyroX;
+    }
    
     motorCurrentSensorValue = motorRun(motor, DIR_CW, motorSpeed);
     if (motorCurrentSensorValue > motorCurrentMax[2*motor])
@@ -600,12 +613,43 @@ void trackSurface(int angle)
     }
   }
   motorOff(motor, STOP_REASON_GYRO); 
-  // Read gyro_x and usonicDistanceCm
-
-  // Find lowest_usonicDistanceCm
-  // Save lowest_gyro_x for lowest_usonicDistanceCm
-
+   Serial.print(F("  lowUSonicDistanceCm = "));
+   Serial.print(lowUSonicDistanceCm);
+   Serial.print(F("  lowMPUGyroX = "));
+   Serial.println(lowMPUGyroX);
+    
+   delay(1500);
+   
   // RUN MOTOR_R CCW till lowest_gyro_x
+
+  while(curMPUGyroX > (lowMPUGyroX + 15))
+  {
+     if (mpuInterrupt)
+      {
+        while(!getMPUGyroXYZ());
+        curMPUGyroX = mpuGyroX;
+        if (startMPUGyroX != 0)
+          {
+            Serial.print(F("  curMpuGyroX = "));
+            Serial.print(curMPUGyroX);
+          }
+      }  
+   
+    motorCurrentSensorValue = motorRun(motor, DIR_CCW, motorSpeed);
+    if (motorCurrentSensorValue > motorCurrentMax[2*motor+1])
+      {
+        motorOff(motor, STOP_REASON_BLOCK);
+        return STOP_REASON_BLOCK;
+      }  
+    if (flagStart && (motorSpeed < motorSpeedMax[2*motor+1]))
+      motorSpeed++;
+    else
+    {
+      motorSpeed = motorSpeedMin[2*motor+1];
+      flagStart = false;
+    }
+  }
+  motorOff(motor, STOP_REASON_GYRO);
   
 }
 
