@@ -260,7 +260,7 @@ void setup()
   //initMotorR();
  // testMotorAll();
 
- trackSurface(1000);
+ trackSurface(100);
 }
 
 
@@ -519,16 +519,18 @@ uint8_t motorRunTimeUSonic(uint8_t motor, uint8_t motorDir, int runTime)
   return STOP_REASON_TIME;
 }
 
-void trackSurface(int t)
+void trackSurface(int angle)
 {
 
   // Track surface look most higher point on it
+  // Rotate while Angle
 
   boolean flagStart = true;
   boolean flagStartPosition = true;
   long lowUSonicDistanceCm;
   long curUSonicDistanceCm;
   float startMPUGyroX;
+  float endMPUGyroX;
   float curMPUGyroX;
   int i;
   uint8_t motorSpeed;
@@ -543,21 +545,30 @@ void trackSurface(int t)
       if (startMPUGyroX != 0)
         {
           flagStartPosition = false;
-          Serial.print(F("  StartMpuGyroX = "));
+          Serial.print(F("  startMpuGyroX = "));
           Serial.println(startMPUGyroX);
         }
     }
 
+  // End gyro Position
+  endMPUGyroX = startMPUGyroX + angle;
+  if (endMPUGyroX > 180) 
+    endMPUGyroX -= endMPUGyroX - 360;
+  Serial.print(F("  endMpuGyroX = "));
+  Serial.print(endMPUGyroX);
+  
   // Save cur_usonicDistanceCm
    lowUSonicDistanceCm = usonicDistanceCm();
    Serial.print(F("  LowUSonic = "));
    Serial.println(lowUSonicDistanceCm);
    
 
-  // RUN MOTOR_R CW for t ms time
+  // RUN MOTOR_R CW till endMPUGyroX
   motorSpeed = motorSpeedStart[2*motor];
-  
-  for(i=0; i<t; i+=STEP_MS)
+
+  curMPUGyroX = startMPUGyroX;
+
+  while(curMPUGyroX < endMPUGyroX)
   {
      if (mpuInterrupt)
       {
@@ -588,7 +599,7 @@ void trackSurface(int t)
       flagStart = false;
     }
   }
-  motorOff(motor, STOP_REASON_TIME); 
+  motorOff(motor, STOP_REASON_GYRO); 
   // Read gyro_x and usonicDistanceCm
 
   // Find lowest_usonicDistanceCm
