@@ -1,3 +1,18 @@
+#include <Arduino.h>
+void motorOff(uint8_t motor, uint8_t reason);
+void trackSurface(int angle);
+uint8_t motorRunTimeUSonic(uint8_t motor, uint8_t motorDir, int runTime);
+uint8_t motorRunUSonic(uint8_t motor, uint8_t curMotorDir, uint8_t curMotorSpeed);
+long usonicDistanceCm();
+uint8_t motorRunTime(uint8_t motor, uint8_t motorDir, int runTime);
+void initMotorH();
+void initMotorR();
+void testMotorAll();
+uint8_t motorRun(uint8_t motor, uint8_t curMotorDir, uint8_t curMotorSpeed);
+void setMotorDirection(uint8_t motor, uint8_t motorDir);
+void motorOff(uint8_t motor, uint8_t reason);
+
+
 #define PIN_LED 13
 
 // MOTORs
@@ -42,11 +57,11 @@
 // MOTORs PWM and CURRENT SENSORS
 
 uint8_t pinPWM[4] = {5, 6, 9, 10};
-uint8_t pinCS[4] = {0, 1, 2, 3}; 
+uint8_t pinCS[4] = {0, 1, 2, 3};
 
 // MOTOR CURRENT MATRIX
 // CurrentSensorMatrix Format Example:
-// motorCurrentMax[8] = {MOTOR_G__DIR_LOOSE,  MOTOR_G__DIR_TIGHT, 
+// motorCurrentMax[8] = {MOTOR_G__DIR_LOOSE,  MOTOR_G__DIR_TIGHT,
 //                       MOTOR_H__DIR_BACK,  MOTOR_H__DIR_FRWD,
 //                       MOTOR_R__DIR_CW, MOTOR_R__DIR__CCW};
 
@@ -54,14 +69,14 @@ uint8_t motorCurrentMax[8] =    {48, 48,    45, 45,   70, 70,   50, 50};
 
 // MOTOR SPEED MATRIX
 // SpeedMatrix Format Example:
-// motorSpeedStart[8] = {MOTOR_G__DIR_LOOSE, MOTOR_G__DIR_TIGHT,  
+// motorSpeedStart[8] = {MOTOR_G__DIR_LOOSE, MOTOR_G__DIR_TIGHT,
 //                       MOTOR_H__DIR_BACK,  MOTOR_H__DIR_FRWD,
 //                       MOTOR_R__DIR_CW, MOTOR_R__DIR__CCW,
 //                       MOTOR_V__DIR_UP,  MOTOR_V__DIR_DN,};
 
 uint8_t motorSpeedStart[8] = { 80,  80,    80,  80,       50,   50,    20, 20};
 uint8_t motorSpeedMax[8] =   {120, 120,    110,  110,     80,   60,    40, 40};
-uint8_t motorSpeedMin[8] =   {110,  70,    30,  30,       60,   40,    30, 30};
+uint8_t motorSpeedMin[8] =   {110,  70,    30,  30,       60,   50,    30, 30};
 uint8_t motorSpeedInc[4] = {1, 1, 1, 1};
 uint8_t motorSpeedDelay[4] = {250, 250, 250, 250};
 
@@ -83,7 +98,7 @@ MPU6050 mpu;
 #define OUTPUT_READABLE_YAWPITCHROLL
 
 
-#define LED_PIN 13 
+#define LED_PIN 13
 bool blinkState = false;
 
 // MPU control/status vars
@@ -108,41 +123,41 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
 
 // GYRO
-float startMPUGyroZ = 0; 
-float endMPUGyroZ = 0; 
+float startMPUGyroZ = 0;
+float endMPUGyroZ = 0;
 float curMPUGyroZ = 0;
-float absTreshold; 
+float absTreshold;
 float startTrMPUGyroZ;
 float endTrMPUGyroZ;
-float mpuGyroX = 0; 
-float mpuGyroY = 0; 
-float mpuGyroZ = 0; 
+float mpuGyroX = 0;
+float mpuGyroY = 0;
+float mpuGyroZ = 0;
 
 boolean startPosition = false;
 boolean endPosition = false;
 
-volatile bool mpuInterrupt = false; 
+volatile bool mpuInterrupt = false;
 
 boolean getMPUGyroXYZ ()
-{    
+{
       boolean flagReturn = false;
       mpuInterrupt = false;
       mpuIntStatus = mpu.getIntStatus();
-      
+
       // get current FIFO count
       fifoCount = mpu.getFIFOCount();
-      
+
       // check for overflow (this should never happen unless our code is too inefficient)
       if ((mpuIntStatus & 0x10) || fifoCount == 1024) {
         // reset so we can continue cleanly
         mpu.resetFIFO();
         Serial.println(F("FIFO overflow!"));
-       
+
       // otherwise, check for DMP data ready interrupt (this should happen frequently)
-      } else 
+      } else
       if (mpuIntStatus & 0x02) {
         // wait for correct available data length, should be a VERY short wait
-        while (fifoCount < packetSize) 
+        while (fifoCount < packetSize)
              fifoCount = mpu.getFIFOCount();
         Serial.print(F(" FIFO count: "));
         Serial.println(fifoCount);
@@ -165,8 +180,8 @@ boolean getMPUGyroXYZ ()
             Serial.print("\t");
             Serial.print(mpuGyroY);
             Serial.print("\t");
-            Serial.println(mpuGyroZ);        
-         */   
+            Serial.println(mpuGyroZ);
+         */
            flagReturn = true;
       }
      return flagReturn;
@@ -174,23 +189,23 @@ boolean getMPUGyroXYZ ()
 
 
 void dmpDataReady() {
-      mpuInterrupt = true; 
+      mpuInterrupt = true;
 }
 
 
 
 
-volatile bool flagIntButton = true; 
+volatile bool flagIntButton = true;
 
-void intButton() 
+void intButton()
 {
   Serial.println();
   Serial.println(F(" INT: BUTTON "));
   digitalWrite(PIN_LED, LOW);
-  motorOff(MOTOR_ALL, STOP_REASON_BUTTON); 
+  motorOff(MOTOR_ALL, STOP_REASON_BUTTON);
 }
 
-void setup() 
+void setup()
 {
   Serial.begin(115200);
 
@@ -200,9 +215,9 @@ void setup()
   pinMode(PIN_SER, OUTPUT);
   pinMode(PIN_LATCH, OUTPUT);
   pinMode(PIN_CLK, OUTPUT);
- 
+
   attachInterrupt(1, intButton, RISING);
-  
+
    Wire.begin();
     TWBR = 24;
 
@@ -218,7 +233,7 @@ void setup()
 
     // wait for ready
 
-   // delay(500);    
+   // delay(500);
     // load and configure the DMP
     //Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
@@ -237,7 +252,7 @@ void setup()
 
         // enable Arduino interrupt detection
       //  Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
-        
+
         attachInterrupt(0, dmpDataReady, RISING);
         mpuIntStatus = mpu.getIntStatus();
         // set our DMP Ready flag so the main loop() function knows it's okay to use it
@@ -257,12 +272,12 @@ void setup()
         Serial.println(F(")"));
     }
 
- 
- // initMotorH();
-  initMotorR();
- // testMotorAll();
 
-// trackSurface(160);
+  initMotorH();
+// initMotorR();
+// testMotorAll();
+
+//trackSurface(160);
 }
 
 
@@ -273,9 +288,9 @@ void loop()
 }
 
 
-void motorOff(uint8_t motor, uint8_t reason) 
+void motorOff(uint8_t motor, uint8_t reason)
 {
- 
+
  digitalWrite(PIN_LATCH, LOW);
  shiftOut(PIN_SER, PIN_CLK, LSBFIRST, B00000000);
  digitalWrite(PIN_LATCH, HIGH);
@@ -288,18 +303,18 @@ void motorOff(uint8_t motor, uint8_t reason)
    Serial.print(F("ALL "));
  else
    Serial.print(motor);
-   
- switch (reason) 
+
+ switch (reason)
  {
   case STOP_REASON_BLOCK:
     Serial.println(F(" STOP: BLOCK"));
     break;
   case STOP_REASON_SENS_IR:
     Serial.println(F(" STOP: IR"));
-    break;  
+    break;
   case STOP_REASON_TIME:
     Serial.println(F(" STOP: TIME"));
-    break;  
+    break;
   case STOP_REASON_GYRO:
     Serial.println(F(" STOP: GYRO"));
     break;
@@ -307,9 +322,9 @@ void motorOff(uint8_t motor, uint8_t reason)
     Serial.println(F(" STOP: BUTTON"));
     break;
   default:
-    Serial.println(F(" STOP: NA"));  
+    Serial.println(F(" STOP: NA"));
  }
- 
+
 }
 
 void setMotorDirection(uint8_t motor, uint8_t motorDir)
@@ -317,12 +332,12 @@ void setMotorDirection(uint8_t motor, uint8_t motorDir)
    uint8_t shiftDir;
    digitalWrite(PIN_LATCH, LOW);
    shiftOut(PIN_SER, PIN_CLK, MSBFIRST, 0);
-   digitalWrite(PIN_LATCH, HIGH); 
-   
+   digitalWrite(PIN_LATCH, HIGH);
+
    shiftDir = (1 << ((2 * motor) + motorDir));
    digitalWrite(PIN_LATCH, LOW);
    shiftOut(PIN_SER, PIN_CLK, MSBFIRST, shiftDir);
-   digitalWrite(PIN_LATCH, HIGH);  
+   digitalWrite(PIN_LATCH, HIGH);
 
 //   Serial.print(F("  MOTOR: "));
 //   Serial.print(motor);
@@ -332,8 +347,8 @@ void setMotorDirection(uint8_t motor, uint8_t motorDir)
 
 
 uint8_t motorRun(uint8_t motor, uint8_t curMotorDir, uint8_t curMotorSpeed)
-{        
-    int motorCurrentSensorValue;   
+{
+    int motorCurrentSensorValue;
     Serial.print(F("  MOTOR: "));
     Serial.print(motor);
     if (curMotorDir == DIR_LOOSE)
@@ -350,7 +365,7 @@ uint8_t motorRun(uint8_t motor, uint8_t curMotorDir, uint8_t curMotorSpeed)
     motorCurrentSensorValue = analogRead(pinCS[motor]);
     Serial.print("  CURRENT: ");
     Serial.println(motorCurrentSensorValue);
-     
+
     setMotorDirection(motor, curMotorDir);
     analogWrite(pinPWM[motor], curMotorSpeed);
     delay(STEP_MS);
@@ -395,27 +410,33 @@ void initMotorR()
 {
   boolean startPosition = false;
   Serial.println(F("INIT MOTOR_R"));
-  
- // motorRunTimeUSonic(MOTOR_R, DIR_CW, 1500); 
-  delay(500);   
-   motorRunTimeUSonic(MOTOR_R, DIR_CCW, 3500);
+
+ // motorRunTimeUSonic(MOTOR_R, DIR_CW, 1500);
+  delay(500);
+   motorRunTimeUSonic(MOTOR_R, DIR_CCW, 1000);
 
   Serial.print("DONE INIT MOTOR_R");
-  delay(1000);   
+  delay(1000);
 }
 
 void initMotorH()
 {
-   
-  Serial.println(F("INIT MOTOR_H"));
-  
-  motorRunTime(MOTOR_H, DIR_FRWD, 100); 
-  delay(2000);   
 
-  motorRunTime(MOTOR_H, DIR_BACK, 100); 
-  
+  Serial.println(F("INIT MOTOR_H"));
+/*
+  motorRunTime(MOTOR_H, DIR_FRWD, 400);
+  delay(3000);
+  motorRunTime(MOTOR_H, DIR_FRWD, 200);
+  delay(3000);
+  motorRunTime(MOTOR_H, DIR_FRWD, 200);
+  delay(3000);
+
+*/
+
+ motorRunTime(MOTOR_H, DIR_BACK, 400);
+
   Serial.print("DONE INIT MOTOR_H");
-  delay(1000);   
+  delay(1000);
 }
 
 uint8_t motorRunTime(uint8_t motor, uint8_t motorDir, int runTime)
@@ -424,16 +445,16 @@ uint8_t motorRunTime(uint8_t motor, uint8_t motorDir, int runTime)
   int motorSpeed = motorSpeedStart[2*motor];
   int motorCurrentSensorValue;
   boolean flagStart = true;
-  
+
   for(i=0; i<runTime; i+=STEP_MS)
   {
-   
+
     motorCurrentSensorValue = motorRun(motor, motorDir, motorSpeed);
     if (motorCurrentSensorValue > motorCurrentMax[2*motor])
       {
         motorOff(motor, STOP_REASON_BLOCK);
         return STOP_REASON_BLOCK;
-      }  
+      }
     if (flagStart && (motorSpeed < motorSpeedMax[2*motor]))
       motorSpeed++;
     else
@@ -442,7 +463,7 @@ uint8_t motorRunTime(uint8_t motor, uint8_t motorDir, int runTime)
       flagStart = false;
     }
   }
-  motorOff(motor, STOP_REASON_TIME); 
+  motorOff(motor, STOP_REASON_TIME);
   return STOP_REASON_TIME;
 }
 
@@ -463,9 +484,9 @@ long usonicDistanceCm()
 }
 
 uint8_t motorRunUSonic(uint8_t motor, uint8_t curMotorDir, uint8_t curMotorSpeed)
-{        
-    int motorCurrentSensorValue; 
-    long usonicDistanceValue;  
+{
+    int motorCurrentSensorValue;
+    long usonicDistanceValue;
     Serial.print(F("  MOTOR: "));
     Serial.print(motor);
     if (curMotorDir == DIR_LOOSE)
@@ -482,12 +503,12 @@ uint8_t motorRunUSonic(uint8_t motor, uint8_t curMotorDir, uint8_t curMotorSpeed
     motorCurrentSensorValue = analogRead(pinCS[motor]);
     Serial.print("  CURRENT: ");
     Serial.print(motorCurrentSensorValue);
-    
+
     usonicDistanceValue = usonicDistanceCm();
-    
+
     Serial.print("  USONIC: ");
     Serial.println(usonicDistanceValue);
-     
+
     setMotorDirection(motor, curMotorDir);
     analogWrite(pinPWM[motor], curMotorSpeed);
     delay(STEP_MS);
@@ -499,16 +520,16 @@ uint8_t motorRunTimeUSonic(uint8_t motor, uint8_t motorDir, int runTime)
   int i;
   int motorSpeed = motorSpeedStart[2*motor];
   boolean flagStart = true;
-  
+
   for(i=0; i<runTime; i+=STEP_MS)
   {
-   
+
     motorCurrentSensorValue = motorRunUSonic(motor, motorDir, motorSpeed);
     if (motorCurrentSensorValue > motorCurrentMax[2*motor])
       {
         motorOff(motor, STOP_REASON_BLOCK);
         return STOP_REASON_BLOCK;
-      }  
+      }
     if (flagStart && (motorSpeed < motorSpeedMax[2*motor]))
       motorSpeed++;
     else
@@ -517,7 +538,7 @@ uint8_t motorRunTimeUSonic(uint8_t motor, uint8_t motorDir, int runTime)
       flagStart = false;
     }
   }
-  motorOff(motor, STOP_REASON_TIME); 
+  motorOff(motor, STOP_REASON_TIME);
   return STOP_REASON_TIME;
 }
 
@@ -538,9 +559,9 @@ void trackSurface(int angle)
   int i;
   uint8_t motorSpeed;
   uint8_t motor = MOTOR_R;
-  
+
   // Save init gyro position
-  
+
   if (mpuInterrupt && flagStartPosition)
     {
       while(!getMPUGyroXYZ());
@@ -555,23 +576,23 @@ void trackSurface(int angle)
 
   // End gyro Position
   endMPUGyroX = startMPUGyroX + angle;
-  if (endMPUGyroX > 180) 
+  if (endMPUGyroX > 180)
     endMPUGyroX = endMPUGyroX - 360;
   Serial.print(F("  endMpuGyroX = "));
   Serial.print(endMPUGyroX);
-  
+
   // Save cur_usonicDistanceCm
    lowUSonicDistanceCm = usonicDistanceCm();
    Serial.print(F("  LowUSonic = "));
    Serial.println(lowUSonicDistanceCm);
-   
+
 
   // RUN MOTOR_R CW till endMPUGyroX
   motorSpeed = motorSpeedStart[2*motor];
 
   curMPUGyroX = startMPUGyroX;
   lowMPUGyroX = startMPUGyroX;
-  
+
   while(curMPUGyroX < endMPUGyroX)
   {
      if (mpuInterrupt)
@@ -583,27 +604,27 @@ void trackSurface(int angle)
             Serial.print(F("  curMpuGyroX = "));
             Serial.print(curMPUGyroX);
           }
-      }  
+      }
 
   // Read gyro_x and usonicDistanceCm
 
    curUSonicDistanceCm = usonicDistanceCm();
    Serial.print(F("  curUSonic = "));
    Serial.println(curUSonicDistanceCm);
-   
+
    // Find lowest_usonicDistanceCm
    if  (curUSonicDistanceCm < lowUSonicDistanceCm)
     {
       lowUSonicDistanceCm = curUSonicDistanceCm;
       lowMPUGyroX = curMPUGyroX;
     }
-   
+
     motorCurrentSensorValue = motorRun(motor, DIR_CW, motorSpeed);
     if (motorCurrentSensorValue > motorCurrentMax[2*motor])
       {
         motorOff(motor, STOP_REASON_BLOCK);
         return STOP_REASON_BLOCK;
-      }  
+      }
     if (flagStart && (motorSpeed < motorSpeedMax[2*motor]))
       motorSpeed++;
     else
@@ -612,17 +633,17 @@ void trackSurface(int angle)
       flagStart = false;
     }
   }
-  motorOff(motor, STOP_REASON_GYRO); 
+  motorOff(motor, STOP_REASON_GYRO);
    Serial.print(F("  lowUSonicDistanceCm = "));
    Serial.print(lowUSonicDistanceCm);
    Serial.print(F("  lowMPUGyroX = "));
    Serial.println(lowMPUGyroX);
-    
+
    delay(1500);
-   
+
   // RUN MOTOR_R CCW till lowest_gyro_x
 
-  while(curMPUGyroX > (lowMPUGyroX + 15))
+  while(curMPUGyroX > (lowMPUGyroX + 22))
   {
      if (mpuInterrupt)
       {
@@ -633,14 +654,14 @@ void trackSurface(int angle)
             Serial.print(F("  curMpuGyroX = "));
             Serial.print(curMPUGyroX);
           }
-      }  
-   
+      }
+
     motorCurrentSensorValue = motorRun(motor, DIR_CCW, motorSpeed);
     if (motorCurrentSensorValue > motorCurrentMax[2*motor+1])
       {
         motorOff(motor, STOP_REASON_BLOCK);
         return STOP_REASON_BLOCK;
-      }  
+      }
     if (flagStart && (motorSpeed < motorSpeedMax[2*motor+1]))
       motorSpeed++;
     else
@@ -650,6 +671,48 @@ void trackSurface(int angle)
     }
   }
   motorOff(motor, STOP_REASON_GYRO);
-  
-}
 
+
+  // LOOSE MOTOR_G
+
+  motorSpeed = motorSpeedStart[2*MOTOR_G];
+
+  while (motorCurrentSensorValue < motorCurrentMax[2*MOTOR_G])
+  {
+    motorCurrentSensorValue = motorRun(MOTOR_G, DIR_LOOSE, motorSpeed);
+  }
+  motorOff(MOTOR_G, STOP_REASON_BLOCK);
+
+  motorRunTime(MOTOR_G, DIR_TIGHT, 40);
+  motorOff(MOTOR_G, STOP_REASON_TIME);
+  delay(500);
+  // FRWD MOTOR_H
+
+
+  // **** MOTOR_G TIGHT ****
+  Serial.println(F("START MOTOR_G TIGHT"));
+  motorCurrentSensorValue = analogRead(pinCS[MOTOR_G]);
+  motorSpeed = motorSpeedStart[2*MOTOR_G+1];
+  flagStart = true;
+  while (motorCurrentSensorValue < motorCurrentMax[2*MOTOR_G+1])
+  {
+
+    motorCurrentSensorValue = motorRun(MOTOR_G, DIR_TIGHT, motorSpeed);
+
+    if (flagStart && (motorSpeed < motorSpeedMax[2*MOTOR_G+1]))
+      motorSpeed++;
+    else
+    {
+      motorSpeed = motorSpeedMin[2*MOTOR_G+1];
+      flagStart = false;
+    }
+  }
+
+  motorOff(MOTOR_G, STOP_REASON_BLOCK);
+  delay(500);
+
+  // TIGHT MOTOR_G
+
+  // BACK MOTOR_H
+
+}
