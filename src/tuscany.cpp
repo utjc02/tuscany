@@ -1,17 +1,19 @@
 #include <Arduino.h>
-void motorOff(uint8_t motor, uint8_t reason);
 void trackSurface(int angle);
-uint8_t motorRunTimeUSonic(uint8_t motor, uint8_t motorDir, int runTime);
-uint8_t motorRunUSonic(uint8_t motor, uint8_t curMotorDir, uint8_t curMotorSpeed);
 long usonicDistanceCm();
-uint8_t motorRunTime(uint8_t motor, uint8_t motorDir, int runTime);
 void initMotorH();
 void initMotorR();
 void testMotorAll();
-uint8_t motorRun(uint8_t motor, uint8_t curMotorDir, uint8_t curMotorSpeed);
 void setMotorDirection(uint8_t motor, uint8_t motorDir);
 void motorOff(uint8_t motor, uint8_t reason);
+uint8_t motorRun(uint8_t motor, uint8_t curMotorDir, uint8_t curMotorSpeed);
+uint8_t motorRunTime(uint8_t motor, uint8_t motorDir, int runTime);
+uint8_t motorRunTimeUSonic(uint8_t motor, uint8_t motorDir, int runTime);
+uint8_t motorRunUSonic(uint8_t motor, uint8_t curMotorDir, uint8_t curMotorSpeed);
 
+boolean getMPUGyroXYZ();
+void dmpDataReady();
+void intButton();
 
 #define PIN_LED 13
 
