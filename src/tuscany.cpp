@@ -275,11 +275,11 @@ void setup()
     }
 
 
-  initMotorH();
+//  initMotorH();
 // initMotorR();
 // testMotorAll();
 
-//trackSurface(160);
+trackSurface(160);
 }
 
 
