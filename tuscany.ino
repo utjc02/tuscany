@@ -80,8 +80,17 @@ uint8_t motorCurrentMax[8] =    {48, 48,    45, 45,   70, 70,   50, 50};
 //                       MOTOR_V__DIR_UP,  MOTOR_V__DIR_DN,};
 
 uint8_t motorSpeedStart[8] = { 80,  80,    80,  80,       50,   50,    20, 20};
+<<<<<<< HEAD:src/tuscany.cpp
 uint8_t motorSpeedMax[8] =   {120, 120,    110,  110,     80,   60,    40, 40};
+<<<<<<< HEAD:src/tuscany.cpp
+uint8_t motorSpeedMin[8] =   {110,  70,    30,  30,       60,   50,    30, 30};
+=======
+uint8_t motorSpeedMax[8] =   {120, 120,    110,  110,     80,   80,    40, 40};
+uint8_t motorSpeedMin[8] =   {110,  70,    30,  30,       60,   60,    30, 30};
+>>>>>>> parent of 18f8dee... find Low, back to it:tuscany.ino
+=======
 uint8_t motorSpeedMin[8] =   {110,  70,    30,  30,       60,   40,    30, 30};
+>>>>>>> parent of daafbac... init platformio:tuscany.ino
 uint8_t motorSpeedInc[4] = {1, 1, 1, 1};
 uint8_t motorSpeedDelay[4] = {250, 250, 250, 250};
 
@@ -164,8 +173,6 @@ boolean getMPUGyroXYZ ()
         // wait for correct available data length, should be a VERY short wait
         while (fifoCount < packetSize) 
              fifoCount = mpu.getFIFOCount();
-        Serial.print(F(" FIFO count: "));
-        Serial.println(fifoCount);
 
         // read a packet from FIFO
         mpu.getFIFOBytes(fifoBuffer, packetSize);
@@ -277,18 +284,28 @@ void setup()
         Serial.println(F(")"));
     }
 
- 
- // initMotorH();
-  initMotorR();
- // testMotorAll();
-
 <<<<<<< HEAD:src/tuscany.cpp
+<<<<<<< HEAD:src/tuscany.cpp
+
 //  initMotorH();
 // initMotorR();
 // testMotorAll();
 
 trackSurface(160);
 =======
+ 
+ // initMotorH();
+  //initMotorR();
+ // testMotorAll();
+
+ trackSurface(100);
+>>>>>>> parent of 18f8dee... find Low, back to it:tuscany.ino
+=======
+ 
+ // initMotorH();
+  initMotorR();
+ // testMotorAll();
+
 // trackSurface(160);
 >>>>>>> parent of daafbac... init platformio:tuscany.ino
 }
@@ -423,10 +440,24 @@ void initMotorR()
 {
   boolean startPosition = false;
   Serial.println(F("INIT MOTOR_R"));
+<<<<<<< HEAD:src/tuscany.cpp
+<<<<<<< HEAD:src/tuscany.cpp
+
+ // motorRunTimeUSonic(MOTOR_R, DIR_CW, 1500);
+  delay(500);
+   motorRunTimeUSonic(MOTOR_R, DIR_CCW, 1000);
+=======
+  
+  motorRunTimeUSonic(MOTOR_R, DIR_CW, 1500); 
+  delay(500);   
+   motorRunTimeUSonic(MOTOR_R, DIR_CCW, 1500);
+>>>>>>> parent of 18f8dee... find Low, back to it:tuscany.ino
+=======
   
  // motorRunTimeUSonic(MOTOR_R, DIR_CW, 1500); 
   delay(500);   
    motorRunTimeUSonic(MOTOR_R, DIR_CCW, 3500);
+>>>>>>> parent of daafbac... init platformio:tuscany.ino
 
   Serial.print("DONE INIT MOTOR_R");
   delay(1000);   
@@ -562,7 +593,6 @@ void trackSurface(int angle)
   float startMPUGyroX;
   float endMPUGyroX;
   float curMPUGyroX;
-  float lowMPUGyroX;
   int i;
   uint8_t motorSpeed;
   uint8_t motor = MOTOR_R;
@@ -583,8 +613,17 @@ void trackSurface(int angle)
 
   // End gyro Position
   endMPUGyroX = startMPUGyroX + angle;
+<<<<<<< HEAD:src/tuscany.cpp
+<<<<<<< HEAD:src/tuscany.cpp
+  if (endMPUGyroX > 180)
+=======
   if (endMPUGyroX > 180) 
+>>>>>>> parent of daafbac... init platformio:tuscany.ino
     endMPUGyroX = endMPUGyroX - 360;
+=======
+  if (endMPUGyroX > 180) 
+    endMPUGyroX -= endMPUGyroX - 360;
+>>>>>>> parent of 18f8dee... find Low, back to it:tuscany.ino
   Serial.print(F("  endMpuGyroX = "));
   Serial.print(endMPUGyroX);
   
@@ -598,8 +637,15 @@ void trackSurface(int angle)
   motorSpeed = motorSpeedStart[2*motor];
 
   curMPUGyroX = startMPUGyroX;
+<<<<<<< HEAD:src/tuscany.cpp
   lowMPUGyroX = startMPUGyroX;
+<<<<<<< HEAD:src/tuscany.cpp
+=======
+>>>>>>> parent of 18f8dee... find Low, back to it:tuscany.ino
+
+=======
   
+>>>>>>> parent of daafbac... init platformio:tuscany.ino
   while(curMPUGyroX < endMPUGyroX)
   {
      if (mpuInterrupt)
@@ -613,19 +659,29 @@ void trackSurface(int angle)
           }
       }  
 
-  // Read gyro_x and usonicDistanceCm
-
    curUSonicDistanceCm = usonicDistanceCm();
    Serial.print(F("  curUSonic = "));
    Serial.println(curUSonicDistanceCm);
+<<<<<<< HEAD:src/tuscany.cpp
+<<<<<<< HEAD:src/tuscany.cpp
+
+=======
    
+>>>>>>> parent of daafbac... init platformio:tuscany.ino
    // Find lowest_usonicDistanceCm
    if  (curUSonicDistanceCm < lowUSonicDistanceCm)
     {
       lowUSonicDistanceCm = curUSonicDistanceCm;
       lowMPUGyroX = curMPUGyroX;
     }
+<<<<<<< HEAD:src/tuscany.cpp
+
+=======
    
+>>>>>>> parent of 18f8dee... find Low, back to it:tuscany.ino
+=======
+   
+>>>>>>> parent of daafbac... init platformio:tuscany.ino
     motorCurrentSensorValue = motorRun(motor, DIR_CW, motorSpeed);
     if (motorCurrentSensorValue > motorCurrentMax[2*motor])
       {
@@ -640,7 +696,12 @@ void trackSurface(int angle)
       flagStart = false;
     }
   }
+<<<<<<< HEAD:src/tuscany.cpp
+<<<<<<< HEAD:src/tuscany.cpp
+  motorOff(motor, STOP_REASON_GYRO);
+=======
   motorOff(motor, STOP_REASON_GYRO); 
+>>>>>>> parent of daafbac... init platformio:tuscany.ino
    Serial.print(F("  lowUSonicDistanceCm = "));
    Serial.print(lowUSonicDistanceCm);
    Serial.print(F("  lowMPUGyroX = "));
@@ -678,6 +739,64 @@ void trackSurface(int angle)
     }
   }
   motorOff(motor, STOP_REASON_GYRO);
+<<<<<<< HEAD:src/tuscany.cpp
+=======
+  motorOff(motor, STOP_REASON_GYRO); 
+  // Read gyro_x and usonicDistanceCm
+
+  // Find lowest_usonicDistanceCm
+  // Save lowest_gyro_x for lowest_usonicDistanceCm
+
+  // RUN MOTOR_R CCW till lowest_gyro_x
   
+}
+>>>>>>> parent of 18f8dee... find Low, back to it:tuscany.ino
+
+
+  // LOOSE MOTOR_G
+
+  motorSpeed = motorSpeedStart[2*MOTOR_G];
+
+  while (motorCurrentSensorValue < motorCurrentMax[2*MOTOR_G])
+  {
+    motorCurrentSensorValue = motorRun(MOTOR_G, DIR_LOOSE, motorSpeed);
+  }
+  motorOff(MOTOR_G, STOP_REASON_BLOCK);
+
+  motorRunTime(MOTOR_G, DIR_TIGHT, 40);
+  motorOff(MOTOR_G, STOP_REASON_TIME);
+  delay(500);
+  // FRWD MOTOR_H
+
+
+  // **** MOTOR_G TIGHT ****
+  Serial.println(F("START MOTOR_G TIGHT"));
+  motorCurrentSensorValue = analogRead(pinCS[MOTOR_G]);
+  motorSpeed = motorSpeedStart[2*MOTOR_G+1];
+  flagStart = true;
+  while (motorCurrentSensorValue < motorCurrentMax[2*MOTOR_G+1])
+  {
+
+    motorCurrentSensorValue = motorRun(MOTOR_G, DIR_TIGHT, motorSpeed);
+
+    if (flagStart && (motorSpeed < motorSpeedMax[2*MOTOR_G+1]))
+      motorSpeed++;
+    else
+    {
+      motorSpeed = motorSpeedMin[2*MOTOR_G+1];
+      flagStart = false;
+    }
+  }
+
+  motorOff(MOTOR_G, STOP_REASON_BLOCK);
+  delay(500);
+
+  // TIGHT MOTOR_G
+
+  // BACK MOTOR_H
+
+=======
+  
+>>>>>>> parent of daafbac... init platformio:tuscany.ino
 }
 
