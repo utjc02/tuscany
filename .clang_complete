@@ -5,6 +5,8 @@
 -I/Users/vlad/Documents/Arduino/tuscany/lib/MPU6050
 -I/Users/vlad/Documents/Arduino/tuscany/src
 -I/Users/vlad/Documents/Arduino/tuscany/lib/I2Cdev
+-I/Users/vlad/.platformio/packages/framework-arduinoavr/libraries/Wire/src
+-I/Users/vlad/Documents/Arduino/tuscany/lib/I2Cdev
 -I/Users/vlad/Documents/Arduino/tuscany/lib/MPU6050
 -I/Users/vlad/.platformio/packages/framework-arduinoavr/libraries/Adafruit_CircuitPlayground
 -I/Users/vlad/.platformio/packages/framework-arduinoavr/libraries/Adafruit_CircuitPlayground/utility
